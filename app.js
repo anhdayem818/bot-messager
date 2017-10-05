@@ -1,46 +1,78 @@
 var express = require('express');
-var path = require('path');
-var favicon = require('serve-favicon');
-var logger = require('morgan');
-var cookieParser = require('cookie-parser');
-var bodyParser = require('body-parser');
-
-var index = require('./routes/index');
-var users = require('./routes/users');
-
 var app = express();
 
-// view engine setup
-app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'jade');
+var FBBotFramework = require('fb-bot-framework');
 
-// uncomment after placing your favicon in /public
-//app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
-app.use(logger('dev'));
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
-
-app.use('/', index);
-app.use('/users', users);
-
-// catch 404 and forward to error handler
-app.use(function(req, res, next) {
-  var err = new Error('Not Found');
-  err.status = 404;
-  next(err);
+// Initialize
+var bot = new FBBotFramework({
+    page_token: "EAAHkfvKXgGkBAJCZAksrUqfXKwyEZBIkJB2bZB5isoQqCyboIENGv6CT8rRyfMxYbo2YnH1FMImYZBt82iIfS0o3B5bYMP0lZAZBfeR2hc6ac97mdFxFXao1t5IybiipP5Sf9eEZAYVIbCnetjLL8Y54AONlcf3UZCw9zTdLMFVbAZAcZAsLI0t0bj",
+    verify_token: "xuxufootball"
 });
 
-// error handler
-app.use(function(err, req, res, next) {
-  // set locals, only providing error in development
-  res.locals.message = err.message;
-  res.locals.error = req.app.get('env') === 'development' ? err : {};
+// Setup Express middleware for /webhook
+app.use('/webhook', bot.middleware());
 
-  // render the error page
-  res.status(err.status || 500);
-  res.render('error');
+// Setup listener for incoming messages
+bot.on('message', function (userId, message) {
+	console.log(message)
+	console.log('-------------------')
+    // Send text message
+    // bot.sendTextMessage(userId, "Echo Message:" + message);
+
+    // Send quick replies
+    var replies = [
+        {
+            "content_type": "text",
+            "title": "👍",
+            "payload": "thumbs_up"
+        },
+        {
+            "content_type": "text",
+            "title": "👎",
+            "payload": "thumbs_down"
+        }
+    ];
+    bot.sendQuickReplies(userId, message, replies);
 });
+
+bot.on('quickreply', function (userId, payload) {
+    bot.sendTextMessage(userId, "payload:" + payload);
+});
+
+// Config the Get Started Button and register a callback
+bot.setGetStartedButton("GET_STARTED");
+bot.on('postback', function (userId, payload) {
+
+    if (payload == "GET_STARTED") {
+        getStarted(userId);
+    }
+
+    // Other postback callbacks here
+    // ...
+
+});
+
+function getStarted(userId) {
+
+    // Get started process 
+}
+
+// Setup listener for attachment
+bot.on('attachment', function (userId, attachment) {
+
+    // Echo the audio attachment
+    if (attachment[0].type == "audio") {
+        bot.sendAudioAttachment(userId, attachment[0].payload.url);
+    }
+
+});
+
+app.get("/", function (req, res){
+  res.send("hello world");
+});
+
+// Make Express listening
+//Make Express listening
+app.listen(4000);
 
 module.exports = app;
